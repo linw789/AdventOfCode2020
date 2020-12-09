@@ -1,27 +1,18 @@
+use advent_of_code_2020::*;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::vec::Vec;
-use std::str::FromStr;
-use advent_of_code_2020::*;
 
-fn main() -> io::Result<()> {
-    let input_file = File::open("src/bin/day001.input")?;
-    let lines = io::BufReader::new(input_file).lines().map(|l| l.unwrap());
+#[macro_use]
+extern crate exec_time;
 
-    let mut entries = Vec::new();
-
-    for line in lines {
-        entries.push(i32::from_str(&line).unwrap());
-    }
-
-    let mut res;
-
-    quick_sort(&mut entries);
+#[exec_time]
+fn part_1(entries: &[i32]) -> i32 {
     let mut head_i = 0;
     let mut tail_i = entries.len() - 1;
     loop {
-        if head_i > tail_i {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "No 2 entries summed to 2020."));
+        if head_i >= tail_i {
+            panic!("No 2 entries summed to 2020.");
         }
 
         let sum = entries[head_i] + entries[tail_i];
@@ -30,22 +21,36 @@ fn main() -> io::Result<()> {
         } else if sum > 2020 {
             tail_i -= 1;
         } else {
-            res = entries[head_i] * entries[tail_i];
-            break;
+            return entries[head_i] * entries[tail_i];
         }
     }
-    println!("sort first, 2-entry result: {}", res);
+}
 
+#[exec_time]
+fn part_2(entries: &[i32]) -> i32 {
     for i in &entries[..entries.len() - 2] {
         for j in &entries[1..entries.len() - 1] {
             for k in &entries[2..] {
                 if i + j + k == 2020 {
-                    res = i * j * k;
-                    break;
+                    return i * j * k;
                 }
             }
         }
     }
+    panic!("No 3 entries summed to 2020.");
+}
+
+fn main() -> io::Result<()> {
+    let input_file = File::open("src/bin/day001.input")?;
+    let lines = io::BufReader::new(input_file).lines();
+
+    let mut entries: Vec<i32> = lines.map(|l| l.unwrap().parse::<i32>().unwrap()).collect();
+
+    quick_sort(&mut entries);
+    let res = part_1(&entries);
+    println!("sort first, 2-entry result: {}", res);
+
+    let res = part_2(&entries);
     println!("3-entry result: {}", res);
 
     return Ok(());
