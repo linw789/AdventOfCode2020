@@ -16,7 +16,7 @@ fn main() -> io::Result<()> {
 
     let mut res;
 
-    insert_sort(&mut entries);
+    quick_sort(&mut entries);
     let mut head_i = 0;
     let mut tail_i = entries.len() - 1;
     loop {
