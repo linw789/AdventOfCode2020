@@ -1,93 +1,28 @@
-use std::io::{self, BufRead};
+use std::io::{self};
 use std::vec::Vec;
-use std::fs::File;
+use std::str::from_utf8;
 
-#[derive(Debug)]
-struct Password {
-    min: usize,
-    max: usize,
-    target_letter: String,
-    password: String,
-}
-
-impl Password {
-    pub fn new(min: usize, max: usize, tl: String, pw: String) -> Self {
-        return Self {
-            min,
-            max,
-            target_letter: tl,
-            password: pw,
-        };
-    }
-
-    pub fn validate(&self) -> bool {
-        let cnt = self.password.matches(&self.target_letter).count() as usize;
-        return cnt >= self.min && cnt <= self.max;
-    }
-
-    pub fn validate2(&self) -> bool {
-        let mut cnt = 0;
-        let pos = self.min - 1;
-        if pos >= self.password.len() {
-            return false;
-        }
-        if self.password.get(pos..pos+1).unwrap() == self.target_letter {
-            cnt += 1;
-        }
-        let pos = self.max - 1;
-        if pos >= self.password.len() {
-            return cnt == 1;
-        }
-        if self.password.get(pos..pos+1).unwrap() == self.target_letter {
-            return cnt != 1;
-        } else {
-            return cnt == 1;
-        }
-    }
-}
-
-fn parse_input() -> Vec<Password> {
-    let input_file = File::open("src/bin/day002.input").unwrap();
-    let lines = io::BufReader::new(input_file).lines().map(|l| l.unwrap());
-
-    let mut passwords = Vec::new();
-
-    for line in lines {
-        let mut start = 0;
-        let mut end = line.find("-").unwrap();
-        let min = line[start..end].parse::<usize>().unwrap();
-
-        start = end + 1;
-        end = line.find(" ").unwrap();
-        let max = line[start..end].parse::<usize>().unwrap();
-
-        start = end + 1;
-        let tl = &line[start..start + 1];
-        
-        start += 3;
-        let pw = &line[start..];
-
-        passwords.push(Password::new(min, max, tl.to_string(), pw.to_string()));
-    }
-
-    return passwords;
-}
-
-fn part_1(pwds: &Vec<Password>) -> usize {
+fn part_1(pwds: &Vec<(i32, i32, &str, &str)>) -> usize {
     let mut valid_cnt = 0;
     for pwd in pwds {
-        if pwd.validate() {
+        let repeats = pwd.3.matches(pwd.2).count() as i32;
+
+        if repeats >= pwd.0 && repeats <= pwd.1 {
             valid_cnt += 1;
         }
     }
     return valid_cnt;
 }
 
-fn part_2(pwds: &Vec<Password>) -> usize {
+fn part_2(pwds: &Vec<(i32, i32, &str, &str)>) -> usize {
     let mut valid_cnt = 0;
     for pwd in pwds {
-        let valid = pwd.validate2();
-        if valid {
+        let lo = pwd.0 as usize - 1;
+        let hi = pwd.1 as usize - 1;
+        let rune = pwd.2;
+        let password = pwd.3;
+
+        if (&password[lo..lo+1] == rune) ^ (&password[hi..hi+1] == rune) {
             valid_cnt += 1;
         } 
     }
@@ -95,7 +30,19 @@ fn part_2(pwds: &Vec<Password>) -> usize {
 }
 
 fn main() -> io::Result<()> {
-    let passwords = parse_input();
+    let input = include_bytes!("day002.input");
+    let tokens: Vec<&str> = from_utf8(input).unwrap().split_whitespace().collect();
+
+    let mut passwords: Vec<(i32, i32, &str, &str)> = Vec::new();
+    for chunk in tokens.chunks(3) {
+        let mut range = chunk[0].split('-');
+        let lo = range.next().unwrap().parse::<i32>().unwrap();
+        let hi = range.next().unwrap().parse::<i32>().unwrap();
+        let rune = chunk[1].strip_suffix(':').unwrap();
+        let password = chunk[2];
+        passwords.push((lo, hi, rune, password));
+    }
+
     let res = part_1(&passwords);
     println!("Part 1: found {} valid password(s).", res);
 
