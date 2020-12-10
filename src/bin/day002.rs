@@ -4,14 +4,14 @@ use std::fs::File;
 
 #[derive(Debug)]
 struct Password {
-    min: i32,
-    max: i32,
+    min: usize,
+    max: usize,
     target_letter: String,
     password: String,
 }
 
 impl Password {
-    pub fn new(min: i32, max: i32, tl: String, pw: String) -> Self {
+    pub fn new(min: usize, max: usize, tl: String, pw: String) -> Self {
         return Self {
             min,
             max,
@@ -21,8 +21,28 @@ impl Password {
     }
 
     pub fn validate(&self) -> bool {
-        let cnt = self.password.matches(&self.target_letter).count() as i32;
+        let cnt = self.password.matches(&self.target_letter).count() as usize;
         return cnt >= self.min && cnt <= self.max;
+    }
+
+    pub fn validate2(&self) -> bool {
+        let mut cnt = 0;
+        let pos = self.min - 1;
+        if pos >= self.password.len() {
+            return false;
+        }
+        if self.password.get(pos..pos+1).unwrap() == self.target_letter {
+            cnt += 1;
+        }
+        let pos = self.max - 1;
+        if pos >= self.password.len() {
+            return cnt == 1;
+        }
+        if self.password.get(pos..pos+1).unwrap() == self.target_letter {
+            return cnt != 1;
+        } else {
+            return cnt == 1;
+        }
     }
 }
 
@@ -35,11 +55,11 @@ fn parse_input() -> Vec<Password> {
     for line in lines {
         let mut start = 0;
         let mut end = line.find("-").unwrap();
-        let min = line[start..end].parse::<i32>().unwrap();
+        let min = line[start..end].parse::<usize>().unwrap();
 
         start = end + 1;
         end = line.find(" ").unwrap();
-        let max = line[start..end].parse::<i32>().unwrap();
+        let max = line[start..end].parse::<usize>().unwrap();
 
         start = end + 1;
         let tl = &line[start..start + 1];
@@ -53,7 +73,7 @@ fn parse_input() -> Vec<Password> {
     return passwords;
 }
 
-fn validate_passwords(pwds: &Vec<Password>) -> i32 {
+fn part_1(pwds: &Vec<Password>) -> usize {
     let mut valid_cnt = 0;
     for pwd in pwds {
         if pwd.validate() {
@@ -63,10 +83,24 @@ fn validate_passwords(pwds: &Vec<Password>) -> i32 {
     return valid_cnt;
 }
 
+fn part_2(pwds: &Vec<Password>) -> usize {
+    let mut valid_cnt = 0;
+    for pwd in pwds {
+        let valid = pwd.validate2();
+        if valid {
+            valid_cnt += 1;
+        } 
+    }
+    return valid_cnt;
+}
+
 fn main() -> io::Result<()> {
     let passwords = parse_input();
-    let res = validate_passwords(&passwords);
-    println!("Found {} valid password(s).", res);
+    let res = part_1(&passwords);
+    println!("Part 1: found {} valid password(s).", res);
+
+    let res = part_2(&passwords);
+    println!("Part 2: found {} valid password(s).", res);
 
     return Ok(());
 }
