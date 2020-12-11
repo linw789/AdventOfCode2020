@@ -23,7 +23,7 @@ fn part_1(passports: &Vec<&str>) -> i32 {
                 "ecl" => ecl += 1,
                 "pid" => pid += 1,
                 "cid" => cid += 1,
-                _     => panic!("unrecognized field key"),
+                _ => panic!("unrecognized field key"),
             }
         }
 

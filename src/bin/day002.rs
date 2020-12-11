@@ -1,6 +1,6 @@
 use std::io::{self};
-use std::vec::Vec;
 use std::str::from_utf8;
+use std::vec::Vec;
 
 fn part_1(pwds: &Vec<(i32, i32, &str, &str)>) -> usize {
     let mut valid_cnt = 0;
@@ -22,9 +22,9 @@ fn part_2(pwds: &Vec<(i32, i32, &str, &str)>) -> usize {
         let rune = pwd.2;
         let password = pwd.3;
 
-        if (&password[lo..lo+1] == rune) ^ (&password[hi..hi+1] == rune) {
+        if (&password[lo..lo + 1] == rune) ^ (&password[hi..hi + 1] == rune) {
             valid_cnt += 1;
-        } 
+        }
     }
     return valid_cnt;
 }

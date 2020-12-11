@@ -1,5 +1,5 @@
-use std::vec::Vec;
 use std::str::from_utf8;
+use std::vec::Vec;
 
 fn traverse(rows: &Vec<&str>, rsteps: usize, dsteps: usize) -> i32 {
     let mut posx = 0;
@@ -13,7 +13,7 @@ fn traverse(rows: &Vec<&str>, rsteps: usize, dsteps: usize) -> i32 {
             break;
         }
         posx = posx % rows[posy].len();
-        if rows[posy][posx..posx+1] == *"#" {
+        if rows[posy][posx..posx + 1] == *"#" {
             num_tree += 1;
         }
     }
