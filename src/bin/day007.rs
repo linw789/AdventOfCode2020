@@ -1,7 +1,7 @@
-use std::str::from_utf8;
-use std::vec::Vec;
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::str::from_utf8;
+use std::vec::Vec;
 
 fn part_1(rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> i32 {
     fn contains_shiny_gold(id: &str, rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> bool {
@@ -17,8 +17,10 @@ fn part_1(rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> i32 {
                     }
                 }
                 return false;
-            },
-            None => { return false; },
+            }
+            None => {
+                return false;
+            }
         };
     }
 
@@ -41,9 +43,11 @@ fn part_2(rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> i32 {
 
         match rule_map.get(id) {
             Some(contents) => {
-                sum += contents.iter().fold(0, |acc, idn| { return acc + (idn.1 as i32) * total_bags(idn.0, rule_map); });
-            },
-            None => {},
+                sum += contents.iter().fold(0, |acc, idn| {
+                    return acc + (idn.1 as i32) * total_bags(idn.0, rule_map);
+                });
+            }
+            None => {}
         };
 
         return sum;
@@ -64,7 +68,8 @@ fn main() {
 
         remainder = remainder.trim_start();
         while remainder.starts_with(char::is_numeric) {
-            let (n, sub_remainder) = remainder.split_at(remainder.find(|c: char| !c.is_numeric()).unwrap());
+            let (n, sub_remainder) =
+                remainder.split_at(remainder.find(|c: char| !c.is_numeric()).unwrap());
             let bagn = n.trim().parse::<usize>().unwrap();
 
             remainder = sub_remainder;
@@ -83,7 +88,13 @@ fn main() {
         rule_map.insert(id, contents);
     }
 
-    println!("Part 1, number of bags containing shiny gold bag: {}", part_1(&rule_map));
+    println!(
+        "Part 1, number of bags containing shiny gold bag: {}",
+        part_1(&rule_map)
+    );
 
-    println!("Part 2, number of bags in shiny gold bag: {}", part_2(&rule_map));
+    println!(
+        "Part 2, number of bags in shiny gold bag: {}",
+        part_2(&rule_map)
+    );
 }
