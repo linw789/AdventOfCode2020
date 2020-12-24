@@ -41,9 +41,7 @@ fn part_2(rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> i32 {
 
         match rule_map.get(id) {
             Some(contents) => {
-                for (id, n) in contents {
-                    sum += (*n as i32) * total_bags(id, rule_map);
-                }
+                sum += contents.iter().fold(0, |acc, idn| { return acc + (idn.1 as i32) * total_bags(idn.0, rule_map); });
             },
             None => {},
         };
