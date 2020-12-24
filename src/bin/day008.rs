@@ -1,14 +1,15 @@
 use std::str::from_utf8;
 use std::vec::Vec;
 use bit_set::BitSet;
+use itertools::Itertools;
 
 enum Kind {
-    Nop,
-    Acc,
-    Jmp,
+    Nop(i32),
+    Acc(i32),
+    Jmp(i32),
 }
 
-fn part_1(inst_list: &Vec<(Kind, i32)>) -> i32 {
+fn part_1(inst_list: &Vec<Kind>) -> i32 {
     let mut visited = BitSet::new();
     let mut sum = 0;
     let mut index: i32 = 0;
@@ -24,10 +25,10 @@ fn part_1(inst_list: &Vec<(Kind, i32)>) -> i32 {
         visited.insert(index as usize);
 
         let inst = &inst_list[index as usize];
-        match inst.0 {
-            Kind::Nop => index += 1,
-            Kind::Acc => { sum += inst.1; index += 1; },
-            Kind::Jmp => index += inst.1,
+        match inst {
+            Kind::Nop(_) => index += 1,
+            Kind::Acc(arg) => { sum += arg; index += 1; },
+            Kind::Jmp(arg) => index += arg,
         }
     }
 }
@@ -36,23 +37,19 @@ fn main() {
     let input = include_bytes!("day008.input");
     let lines = from_utf8(input).unwrap().lines();
 
-    let mut instructions: Vec<(Kind, i32)> = Vec::new();
+    let mut instructions: Vec<Kind> = Vec::new();
 
     for line in lines {
         let kind;
-
-        let mut parts = line.split_whitespace();
-        match parts.next().unwrap() {
-            "nop" => kind = Kind::Nop,
-            "acc" => kind = Kind::Acc,
-            "jmp" => kind = Kind::Jmp,
+        let (k, v) = line.split_whitespace().next_tuple().unwrap();
+        match k {
+            "nop" => kind = Kind::Nop(v.parse::<i32>().unwrap()),
+            "acc" => kind = Kind::Acc(v.parse::<i32>().unwrap()),
+            "jmp" => kind = Kind::Jmp(v.parse::<i32>().unwrap()),
             _ => panic!("Unrecognized instruction kind."),
 
         }
-
-        let arg = parts.next().unwrap().parse::<i32>().unwrap();
-
-        instructions.push((kind, arg));
+        instructions.push(kind);
     }
 
     println!("Part 1, sum before an operation is re-visited: {}", part_1(&instructions));
