@@ -35,6 +35,25 @@ fn part_1(rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> i32 {
     return sum;
 }
 
+fn part_2(rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> i32 {
+    fn total_bags(id: &str, rule_map: &HashMap<&str, Vec<(&str, usize)>>) -> i32 {
+        let mut sum = 1;
+
+        match rule_map.get(id) {
+            Some(contents) => {
+                for (id, n) in contents {
+                    sum += (*n as i32) * total_bags(id, rule_map);
+                }
+            },
+            None => {},
+        };
+
+        return sum;
+    }
+
+    return total_bags("shiny gold", rule_map) - 1;
+}
+
 fn main() {
     let input = include_bytes!("day007.input");
     let rule_lines = from_utf8(input).unwrap().lines();
@@ -67,4 +86,6 @@ fn main() {
     }
 
     println!("Part 1, number of bags containing shiny gold bag: {}", part_1(&rule_map));
+
+    println!("Part 2, number of bags in shiny gold bag: {}", part_2(&rule_map));
 }
