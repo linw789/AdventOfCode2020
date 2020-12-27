@@ -1,7 +1,7 @@
+use std::cmp::{max, min};
 use std::io::{Error, ErrorKind, Result};
 use std::str::from_utf8;
 use std::vec::Vec;
-use std::cmp::{min, max};
 
 fn part_1(nums: &Vec<i64>) -> Result<i64> {
     let mut index = 25;
@@ -53,10 +53,7 @@ fn main() {
         .collect();
 
     let invalid_num = part_1(&nums).unwrap();
-    println!(
-        "Part 1, the first invalid number: {}",
-        invalid_num
-    );
-    
+    println!("Part 1, the first invalid number: {}", invalid_num);
+
     println!("Part 2, weakness number: {}", part_2(&nums, invalid_num));
 }
