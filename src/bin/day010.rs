@@ -32,11 +32,7 @@ fn part_1(adapters: &Vec<i32>) -> i32 {
 // cannot be removed.
 fn calc_permutation(jolts: &[i32]) -> (i64, i64, i64) {
     if jolts.len() == 4 {
-        let permu = if jolts[2] - jolts[0] <= 3 {
-            2
-        } else {
-            1
-        };
+        let permu = if jolts[2] - jolts[0] <= 3 { 2 } else { 1 };
         // Because the last adapter is the device whose joil is always 3 higher than the second
         // last adapter, the second last must not be missing.
         return (permu, 1, 1);

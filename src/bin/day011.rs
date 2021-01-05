@@ -1,14 +1,15 @@
+use std::mem::swap;
 use std::str::from_utf8;
 use std::vec::Vec;
-use std::mem::swap;
 
 fn count_occupied_adj_seat_num(rows: &[Vec<u8>], seat_row: i32, seat_col: i32) -> i32 {
     let mut occupied_adj_num = 0;
     for r in (seat_row - 1)..(seat_row + 2) {
         for c in (seat_col - 1)..(seat_col + 2) {
-            if (r >= 0 && r < rows.len() as i32) && 
-                (c >= 0 && c < rows[r as usize].len() as i32) &&
-                (r != seat_row || c != seat_col) {
+            if (r >= 0 && r < rows.len() as i32)
+                && (c >= 0 && c < rows[r as usize].len() as i32)
+                && (r != seat_row || c != seat_col)
+            {
                 if rows[r as usize][c as usize] == b'#' {
                     occupied_adj_num += 1;
                 }
@@ -25,7 +26,16 @@ fn count_visible_occupied_seat_num(room: &[Vec<u8>], row: i32, col: i32) -> i32 
     let mut occupied_num = 0;
 
     // Test 8 direction.
-    let step_xy = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)];
+    let step_xy = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (1, 0),
+        (1, 1),
+        (0, 1),
+        (-1, 1),
+        (-1, 0),
+    ];
     for (step_x, step_y) in &step_xy {
         let mut r = row;
         let mut c = col;
@@ -33,17 +43,17 @@ fn count_visible_occupied_seat_num(room: &[Vec<u8>], row: i32, col: i32) -> i32 
             r += step_y;
             c += step_x;
             if r < 0 || r >= row_len || c < 0 || c >= col_len {
-                break; 
+                break;
             } else {
                 match room[r as usize][c as usize] {
                     b'#' => {
                         occupied_num += 1;
                         break;
-                    },
-                    b'L' => { 
-                        break; 
-                    },
-                    _ => {},
+                    }
+                    b'L' => {
+                        break;
+                    }
+                    _ => {}
                 };
             }
         }
@@ -113,13 +123,13 @@ fn part_1(rows: &[Vec<u8>]) -> i32 {
                         if count_occupied_adj_seat_num(room_src, r as i32, c as i32) == 0 {
                             row_dest[c] = b'#';
                         }
-                    },
+                    }
                     b'#' => {
                         if count_occupied_adj_seat_num(room_src, r as i32, c as i32) >= 4 {
                             row_dest[c] = b'L';
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 };
             }
         }
@@ -155,13 +165,13 @@ fn part_2(origianl: &[Vec<u8>]) -> i32 {
                         if count_visible_occupied_seat_num(room_src, r as i32, c as i32) == 0 {
                             row_dest[c] = b'#';
                         }
-                    },
+                    }
                     b'#' => {
                         if count_visible_occupied_seat_num(room_src, r as i32, c as i32) >= 5 {
                             row_dest[c] = b'L';
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 };
             }
         }
@@ -181,9 +191,19 @@ fn part_2(origianl: &[Vec<u8>]) -> i32 {
 
 fn main() {
     let input = include_bytes!("day011.input");
-    let rows: Vec<Vec<u8>> = from_utf8(input).unwrap().lines().map(|s| s.to_owned().into_bytes()).collect();
+    let rows: Vec<Vec<u8>> = from_utf8(input)
+        .unwrap()
+        .lines()
+        .map(|s| s.to_owned().into_bytes())
+        .collect();
 
     // println!("Initial occupied seats: {}", count_occupied_seat_num(&rows));
-    println!("Part 1, occupied seat number after stablization: {}", part_1(&rows));
-    println!("Part 2, occupied seat number after stablization: {}", part_2(&rows));
+    println!(
+        "Part 1, occupied seat number after stablization: {}",
+        part_1(&rows)
+    );
+    println!(
+        "Part 2, occupied seat number after stablization: {}",
+        part_2(&rows)
+    );
 }
