@@ -57,13 +57,14 @@ fn part_1(lines: Lines) -> u64 {
 // 011010, the lowest three bits in `bits` (000xxx) to the corresponding position in `mask`. This
 // effectively permutes set bits in `mask`.
 fn scatter_bits<T>(mut bits: T, mut mask: T) -> T 
-    where T: std::ops::ShrAssign + PrimInt + Bits + BitsIndex<T>, 
+    where T: std::ops::ShrAssign + PrimInt + Bits,
+          u32: BitsIndex<T>,
 {
     let mut result = T::zero();
     while bits != T::zero() && mask != T::zero() {
         let lowest = mask.trailing_zeros(); // lowest set bit position
-        mask.set_bit(lowest.into(), false);
-        result.set_bit(lowest.into(), bits.bit(0.into()));
+        mask.set_bit(lowest, false);
+        result.set_bit(lowest, bits.bit(0u32));
         bits >>= T::one();
     }
     return result;
@@ -71,10 +72,12 @@ fn scatter_bits<T>(mut bits: T, mut mask: T) -> T
 
 fn part_2(lines: Lines) -> u64 {
     let mut mem = HashMap::new();
+    let mut or_mask = 0;
+    let mut float_mask = 0;
     for line in lines {
-        let mut or_mask = 0;
-        let mut float_mask = 0;
         if let Some(maskstr) = line.strip_prefix("mask = ") {
+            or_mask = 0;
+            float_mask = 0;
             for c in maskstr.chars() {
                 or_mask <<= 1;
                 float_mask <<= 1;
@@ -120,8 +123,11 @@ fn main() {
 
     println!("Part 1: {}", part_1(lines.clone()));
 
-    let bits = 0b0000_0001u8;
+    /*
+    let bits = 0b0000_0010u8;
     let mask = 0b0000_1010u8;
     println!("bits: {:08b}, mask: {:08b}, result: {:08b}", bits, mask, scatter_bits(bits, mask));
-    // println!("Part 2: {}", part_2(lines));
+    */
+
+    println!("Part 2: {}", part_2(lines));
 }
