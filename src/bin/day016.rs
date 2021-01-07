@@ -1,31 +1,26 @@
 use itertools::Itertools;
+use std::collections::HashSet;
+use std::ops::Range;
 use std::str::from_utf8;
 use std::vec::Vec;
-use std::collections::HashMap;
 
 struct Rule<'a> {
     pub name: &'a str,
-    range0: (u32, u32),
-    range1: (u32, u32),
+    range0: Range<u32>,
+    range1: Range<u32>,
 }
 
 impl<'a> Rule<'a> {
     pub fn new(name: &'a str, min0: u32, max0: u32, min1: u32, max1: u32) -> Self {
         return Self {
             name,
-            range0: (min0, max0),
-            range1: (min1, max1),
+            range0: (min0..max0 + 1),
+            range1: (min1..max1 + 1),
         };
     }
 
     pub fn validate(&self, v: u32) -> bool {
-        if (v >= self.range0.0 && v <= self.range0.1) || 
-           (v >= self.range1.0 && v <= self.range1.1)
-        {
-            return true;
-        } else {
-            return false;
-        }
+        return self.range0.contains(&v) || self.range1.contains(&v);
     }
 }
 
@@ -56,7 +51,10 @@ fn main() {
         ))
     }
 
-    let my_ticket: Vec<u32> = my_ticket_str.split(",").map(|s| s.parse::<u32>().unwrap()).collect();
+    let my_ticket: Vec<u32> = my_ticket_str
+        .split(",")
+        .map(|s| s.parse::<u32>().unwrap())
+        .collect();
 
     // Parse nearby tickets.
     let mut nearby_tickets = Vec::new();
@@ -93,48 +91,65 @@ fn main() {
 
     // Part 2.
 
-    // Test
-    let mut valid_field_vector = HashMap::new();
-    for rule in &rules {
-        valid_field_vector.insert(rule.name, 0u32);
+    let mut fields = Vec::new();
+
+    for _ in 0..my_ticket.len() {
+        let mut possible_rules_per_field = HashSet::new();
+
+        for rule in &rules {
+            possible_rules_per_field.insert(rule.name);
+        }
+        fields.push(possible_rules_per_field);
     }
 
-    let mut field_name_order = Vec::new();
-    let rules_len = rules.len();
-    let total_nearby_tickets = valid_nearby_tickets.len() as u32;
-    println!("total nearby tickets: {}", total_nearby_tickets);
-    for i in 0..rules_len {
-        println!("checking pos: {}", i);
+    for i in 0..my_ticket.len() {
         for ticket in &valid_nearby_tickets {
+            // Remove rules that's impossible for that field.
             for rule in &rules {
-                if rule.validate(ticket[i]) {
-                    *(valid_field_vector.get_mut(rule.name).unwrap()) += 1;
+                if !rule.validate(ticket[i]) {
+                    fields[i].remove(rule.name);
+                    break;
                 }
             }
         }
+    }
 
-        println!("valid field: {:?}", valid_field_vector);
-        let field_name = valid_field_vector.iter().find_map(|(&k, &v)| {
-            if v == total_nearby_tickets {
-                return Some(k);
-            } else {
-                return None;
+    // If a field only contains one possible rule, then the said rule is decided to belong to that
+    // field.
+    let mut decided_rules = HashSet::new();
+
+    loop {
+        for field_possible_rules in &fields {
+            if field_possible_rules.len() == 1 {
+                decided_rules.insert(*field_possible_rules.iter().next().unwrap());
             }
-        }).unwrap();
+        }
 
-        field_name_order.push(field_name);
+        if decided_rules.len() == my_ticket.len() {
+            break;
+        }
 
-        for (_, v) in valid_field_vector.iter_mut() {
-            *v = 0;
+        // Remove already decided rules from possible rules of other fields.
+        for field_possible_rules in &mut fields {
+            if field_possible_rules.len() != 1 {
+                for decided_rule in &decided_rules {
+                    field_possible_rules.remove(decided_rule);
+                }
+            }
         }
     }
 
-    let mut departure_product = 1;
-    for (i, field_name) in field_name_order.iter().enumerate() {
+    let mut depart_product: u64 = 1;
+
+    for (field_name, value) in fields
+        .iter()
+        .map(|s| *s.iter().next().unwrap())
+        .zip(my_ticket.iter().map(|v| *v as u64))
+    {
         if field_name.starts_with("departure") {
-            departure_product *= my_ticket[i];
+            depart_product *= value;
         }
     }
 
-    println!("Part 2: {}", departure_product);
+    println!("Part 2: {}", depart_product);
 }
