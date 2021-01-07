@@ -1,9 +1,9 @@
+use intbits::{Bits, BitsIndex};
 use itertools::Itertools;
+use num_traits::int::PrimInt;
 use std::collections::HashMap;
 use std::str::from_utf8;
 use std::str::Lines;
-use intbits::{Bits, BitsIndex};
-use num_traits::int::PrimInt;
 
 fn mask(mut val: u64, mask: &str) -> u64 {
     for (index, bit) in mask.chars().rev().enumerate() {
@@ -53,12 +53,13 @@ fn part_1(lines: Lines) -> u64 {
 }
 
 // Distrubute the bits in `bits` to the positions of set bits in `mask`. If there are n set bits in
-// `mask`, The bits to be distributed are the lowest n bits in `bits`. For example, if `mask` is 
+// `mask`, The bits to be distributed are the lowest n bits in `bits`. For example, if `mask` is
 // 011010, the lowest three bits in `bits` (000xxx) to the corresponding position in `mask`. This
 // effectively permutes set bits in `mask`.
-fn scatter_bits<T>(mut bits: T, mut mask: T) -> T 
-    where T: std::ops::ShrAssign + PrimInt + Bits,
-          u32: BitsIndex<T>,
+fn scatter_bits<T>(mut bits: T, mut mask: T) -> T
+where
+    T: std::ops::ShrAssign + PrimInt + Bits,
+    u32: BitsIndex<T>,
 {
     let mut result = T::zero();
     while bits != T::zero() && mask != T::zero() {
@@ -82,13 +83,13 @@ fn part_2(lines: Lines) -> u64 {
                 or_mask <<= 1;
                 float_mask <<= 1;
                 match c {
-                    '0' => {},
+                    '0' => {}
                     '1' => {
                         or_mask |= 0b1;
-                    },
+                    }
                     'X' => {
                         float_mask |= 0b1;
-                    },
+                    }
                     _ => panic!("Invalid mask bit."),
                 }
             }

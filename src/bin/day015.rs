@@ -13,10 +13,10 @@ fn part_1(start_nums: &[u64], end_spoken_pos: usize) -> u64 {
         match num_pos.insert(last_num, i - 1) {
             Some(pos) => {
                 last_num = ((i - 1) - pos) as u64;
-            },
-            None => { 
+            }
+            None => {
                 last_num = 0;
-            },
+            }
         }
     }
 
@@ -28,7 +28,7 @@ fn part_2(start_nums: &[u64]) -> u64 {
 }
 
 fn main() {
-    let input = [0,1,4,13,15,12,16];
+    let input = [0, 1, 4, 13, 15, 12, 16];
 
     println!("Part 1: {}", part_1(&input, 2020));
     println!("Part 2: {}", part_2(&input));
