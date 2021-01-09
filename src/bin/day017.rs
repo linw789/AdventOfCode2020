@@ -1,6 +1,6 @@
-use std::str::from_utf8;
-use std::mem;
 use std::fmt;
+use std::mem;
+use std::str::from_utf8;
 
 #[derive(Copy, Clone, PartialEq)]
 enum CellState {
@@ -11,8 +11,12 @@ enum CellState {
 impl fmt::Debug for CellState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CellState::Active => { return write!(f, "#"); },
-            CellState::Inactive => { return write!(f, "."); },
+            CellState::Active => {
+                return write!(f, "#");
+            }
+            CellState::Inactive => {
+                return write!(f, ".");
+            }
         }
     }
 }
@@ -29,7 +33,13 @@ fn clear_grid(grid: &mut Vec<Vec<Vec<Vec<CellState>>>>) {
     }
 }
 
-fn count_active_neighbors(grid: &Vec<Vec<Vec<Vec<CellState>>>>, w: usize, z: usize, y: usize, x: usize) -> i32 {
+fn count_active_neighbors(
+    grid: &Vec<Vec<Vec<Vec<CellState>>>>,
+    w: usize,
+    z: usize,
+    y: usize,
+    x: usize,
+) -> i32 {
     let mut count = 0;
     if grid[w][z][y][x] == CellState::Active {
         count -= 1; // don't count itself.
@@ -76,7 +86,7 @@ fn part_1(grid: &Vec<Vec<Vec<Vec<CellState>>>>) -> i32 {
     let w = grid.len() / 2;
 
     for _ in 0..6 {
-        mem::swap(grid_src, grid_dest); 
+        mem::swap(grid_src, grid_dest);
         clear_grid(grid_dest);
 
         for z in 1..(grid_src[w].len() - 1) {
@@ -88,12 +98,12 @@ fn part_1(grid: &Vec<Vec<Vec<Vec<CellState>>>>) -> i32 {
                             if active_neighbors == 2 || active_neighbors == 3 {
                                 grid_dest[w][z][y][x] = CellState::Active;
                             }
-                        },
+                        }
                         CellState::Inactive => {
                             if active_neighbors == 3 {
                                 grid_dest[w][z][y][x] = CellState::Active;
                             }
-                        },
+                        }
                     }
                 }
             }
@@ -111,7 +121,7 @@ fn part_2(grid: &Vec<Vec<Vec<Vec<CellState>>>>) -> i32 {
     let grid_dest = &mut grid1;
 
     for _ in 0..6 {
-        mem::swap(grid_src, grid_dest); 
+        mem::swap(grid_src, grid_dest);
         clear_grid(grid_dest);
 
         for w in 1..(grid.len() - 1) {
@@ -124,12 +134,12 @@ fn part_2(grid: &Vec<Vec<Vec<Vec<CellState>>>>) -> i32 {
                                 if active_neighbors == 2 || active_neighbors == 3 {
                                     grid_dest[w][z][y][x] = CellState::Active;
                                 }
-                            },
+                            }
                             CellState::Inactive => {
                                 if active_neighbors == 3 {
                                     grid_dest[w][z][y][x] = CellState::Active;
                                 }
-                            },
+                            }
                         }
                     }
                 }
@@ -171,8 +181,14 @@ fn main() {
     for (y, line) in lines.enumerate() {
         for (x, c) in line.chars().enumerate() {
             match c {
-                '.' => grid[W_SIZE / 2][Z_SIZE / 2][y + (CYCLES + 1)][x + (CYCLES + 1)] = CellState::Inactive,
-                '#' => grid[W_SIZE / 2][Z_SIZE / 2][y + (CYCLES + 1)][x + (CYCLES + 1)] = CellState::Active,
+                '.' => {
+                    grid[W_SIZE / 2][Z_SIZE / 2][y + (CYCLES + 1)][x + (CYCLES + 1)] =
+                        CellState::Inactive
+                }
+                '#' => {
+                    grid[W_SIZE / 2][Z_SIZE / 2][y + (CYCLES + 1)][x + (CYCLES + 1)] =
+                        CellState::Active
+                }
                 _ => panic!("Invalid cell state."),
             }
         }
