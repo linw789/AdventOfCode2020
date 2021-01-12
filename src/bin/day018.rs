@@ -1,7 +1,7 @@
 use std::str::from_utf8;
-use std::str::Lines;
+use std::str::{Chars, Lines};
 use std::vec::Vec;
-use std::iter::Enumerate;
+use std::iter::{Enumerate, Peekable};
 
 #[derive(Debug, PartialEq)]
 enum TokenKind {
@@ -14,12 +14,23 @@ enum TokenKind {
 }
 
 impl TokenKind {
-    pub fn precedence(&self) -> u64 {
+    pub fn precedence_part1(&self) -> u64 {
         match self {
             TokenKind::LeftParen => 1,
             TokenKind::Add => 2,
             TokenKind::Mul => 2,
-            TokenKind::RightParen => 1,
+            TokenKind::RightParen => 4,
+            TokenKind::EndOfLine => 99,
+            TokenKind::Int(_) => 0,
+        }
+    }
+
+    pub fn precedence_part2(&self) -> u64 {
+        match self {
+            TokenKind::LeftParen => 1,
+            TokenKind::Add => 2,
+            TokenKind::Mul => 3,
+            TokenKind::RightParen => 4,
             TokenKind::EndOfLine => 99,
             TokenKind::Int(_) => 0,
         }
@@ -27,14 +38,16 @@ impl TokenKind {
 }
 
 struct Tokens<'a> {
-    char_iter: Enumerate<Chars<'a>>,
+    stream: &'a str,
+    char_iter: Peekable<Enumerate<Chars<'a>>>,
     past_eol: bool,
 }
 
 impl<'a> Tokens<'a> {
     pub fn new(s: &'a str) -> Self {
         return Self {
-            char_iter: s.chars().enumerate(),
+            stream: s,
+            char_iter: s.chars().enumerate().peekable(),
             past_eol: false,
         };
     }
@@ -50,7 +63,7 @@ impl Iterator for Tokens<'_> {
         let mut token_start = 0;
 
         loop {
-            let (c_pos, c) = self.char_iter.next();
+            let c = self.char_iter.next();
             if !c.is_some() {
                 if self.past_eol == false {
                     self.past_eol = true;
@@ -59,7 +72,7 @@ impl Iterator for Tokens<'_> {
                     return None;
                 }
             }
-            let c = c.unwrap();
+            let (c_pos, c) = c.unwrap();
 
             if !c.is_whitespace() {
                 // If token is in-processing, it must have been Int. No need to check character
@@ -78,8 +91,8 @@ impl Iterator for Tokens<'_> {
 
                 if matches!(res, TokenKind::Int(_)) {
                     // Need to look ahead to check if the next character is also numeric.
-                    match char_iter.peek() {
-                        Some(next_c) if next_c.is_numeric() => { token_inprocessing = true }
+                    match self.char_iter.peek() {
+                        Some((_, next_c)) if next_c.is_numeric() => { token_inprocessing = true }
                         _ => {
                             res = TokenKind::Int(self.stream[token_start..(c_pos + 1)].parse::<u64>().unwrap());
                             token_inprocessing = false;
@@ -97,88 +110,108 @@ impl Iterator for Tokens<'_> {
     }
 }
 
-fn part_1(lines: Lines) -> u64 {
+fn shunting_yard(line: &str, precedence: fn(&TokenKind, &TokenKind) -> bool) -> u64 {
     let mut operand_stack = Vec::new();
     let mut operator_stack = Vec::new();
 
-    let mut total = 0;
-    for line in lines {
-        for tok in Tokens::new(line) {
-            // println!("current token: {:?}", tok);
-            if matches!(tok, TokenKind::Int(_)) {
-                operand_stack.push(tok);
-            } else if tok == TokenKind::LeftParen {
-                operator_stack.push(tok);
-            } else {
-                match operator_stack.last() {
-                    Some(last_op) => {
-                        if *last_op == TokenKind::LeftParen {
-                            operator_stack.push(tok);
-                        } else {
-                            loop {
-                                // println!("operand stack: {:?}", operand_stack);
-                                // println!("operator stack: {:?}", operator_stack);
+    for tok in Tokens::new(line) {
+        if matches!(tok, TokenKind::Int(_)) {
+            operand_stack.push(tok);
+        } else if tok == TokenKind::LeftParen {
+            operator_stack.push(tok);
+        } else {
+            match operator_stack.last() {
+                Some(op) => {
+                    if *op == TokenKind::LeftParen {
+                        operator_stack.push(tok);
+                    } else {
+                        loop {
+                            // println!("current token: {:?}", tok);
+                            // println!("operand stack: {:?}", operand_stack);
+                            // println!("operator stack: {:?}", operator_stack);
 
-                                match operator_stack.last() {
-                                    Some(TokenKind::LeftParen) => {
-                                        break;
+                            if let Some(last_op) = operator_stack.last() {
+                                if *last_op == TokenKind::LeftParen {
+                                    break;
+                                } else if precedence(last_op, &tok) == true {
+                                    match *last_op {
+                                        TokenKind::Add => {
+                                            let val0 = match operand_stack.pop().unwrap() {
+                                                TokenKind::Int(v) => v,
+                                                _ => panic!("Invalid token on operand stack."),
+                                            };
+                                            let val1 = match operand_stack.pop().unwrap() {
+                                                TokenKind::Int(v) => v,
+                                                _ => panic!("Invalid token on operand stack."),
+                                            };
+                                            operand_stack.push(TokenKind::Int(val0 + val1));
+                                            operator_stack.pop();
+                                        }
+                                        TokenKind::Mul => {
+                                            let val0 = match operand_stack.pop().unwrap() {
+                                                TokenKind::Int(v) => v,
+                                                _ => panic!("Invalid token on operand stack."),
+                                            };
+                                            let val1 = match operand_stack.pop().unwrap() {
+                                                TokenKind::Int(v) => v,
+                                                _ => panic!("Invalid token on operand stack."),
+                                            };
+                                            operand_stack.push(TokenKind::Int(val0 * val1));
+                                            operator_stack.pop();
+                                        }
+                                        _ => panic!("Invalid token on operator stack: {:?}", last_op),
                                     }
-                                    Some(TokenKind::Add) => {
-                                        let val0 = match operand_stack.pop().unwrap() {
-                                            TokenKind::Int(v) => v,
-                                            _ => panic!("Invalid token on operand stack."),
-                                        };
-                                        let val1 = match operand_stack.pop().unwrap() {
-                                            TokenKind::Int(v) => v,
-                                            _ => panic!("Invalid token on operand stack."),
-                                        };
-                                        operand_stack.push(TokenKind::Int(val0 + val1));
-                                        operator_stack.pop();
-                                    }
-                                    Some(TokenKind::Mul) => {
-                                        let val0 = match operand_stack.pop().unwrap() {
-                                            TokenKind::Int(v) => v,
-                                            _ => panic!("Invalid token on operand stack."),
-                                        };
-                                        let val1 = match operand_stack.pop().unwrap() {
-                                            TokenKind::Int(v) => v,
-                                            _ => panic!("Invalid token on operand stack."),
-                                        };
-                                        operand_stack.push(TokenKind::Int(val0 * val1));
-                                        operator_stack.pop();
-                                    }
-                                    None => {
-                                        break;
-                                    }
-                                    Some(t) => {
-                                        panic!("Invalid token on operator stack: {:?}", t);
-                                    }
+                                } else {
+                                    break;
                                 }
-                            }
-
-                            if tok == TokenKind::RightParen {
-                                operator_stack.pop();
-                            } else if tok != TokenKind::EndOfLine {
-                                operator_stack.push(tok);
+                            } else {
+                                break;
                             }
                         }
+
+                        if tok == TokenKind::RightParen {
+                            operator_stack.pop();
+                        } else if tok != TokenKind::EndOfLine {
+                            operator_stack.push(tok);
+                        }
                     }
-                    None => {
-                        operator_stack.push(tok);
-                    }
+                }
+                None => {
+                    operator_stack.push(tok);
                 }
             }
         }
-
-        total += match operand_stack.pop().unwrap() {
-            TokenKind::Int(v) => v,
-            _ => panic!("The last tok left on operand after evaluation stack is not Int."), 
-        };
-
-        operand_stack.clear();
-        operator_stack.clear();
     }
 
+    let res = match operand_stack.pop().unwrap() {
+        TokenKind::Int(v) => v,
+        _ => panic!("The last tok left on operand after evaluation stack is not Int."), 
+    };
+
+    return res;
+}
+
+fn part_1(lines: Lines) -> u64 {
+    let precedence = |a: &TokenKind, b: &TokenKind| {
+        return a.precedence_part1() <= b.precedence_part1();
+    };
+
+    let mut total = 0;
+    for line in lines {
+        total += shunting_yard(line, precedence);
+    }
+    return total;
+}
+
+fn part_2(lines: Lines) -> u64 {
+    let precedence = |a: &TokenKind, b: &TokenKind| {
+        return a.precedence_part2() <= b.precedence_part2();
+    };
+
+    let mut total = 0;
+    for line in lines {
+        total += shunting_yard(line, precedence);
+    }
     return total;
 }
 
@@ -192,5 +225,6 @@ fn main() {
     }
     */
 
-    println!("Part 1: {}", part_1(lines));
+    println!("Part 1: {}", part_1(lines.clone()));
+    println!("Part 2: {}", part_2(lines));
 }
