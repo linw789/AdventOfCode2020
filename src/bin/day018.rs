@@ -1,6 +1,7 @@
 use std::str::from_utf8;
 use std::str::Lines;
 use std::vec::Vec;
+use std::iter::Enumerate;
 
 #[derive(Debug, PartialEq)]
 enum TokenKind {
@@ -26,16 +27,14 @@ impl TokenKind {
 }
 
 struct Tokens<'a> {
-    stream: &'a str,
-    curr_pos: usize,
+    char_iter: Enumerate<Chars<'a>>,
     past_eol: bool,
 }
 
 impl<'a> Tokens<'a> {
     pub fn new(s: &'a str) -> Self {
         return Self {
-            stream: s,
-            curr_pos: 0,
+            char_iter: s.chars().enumerate(),
             past_eol: false,
         };
     }
@@ -50,10 +49,8 @@ impl Iterator for Tokens<'_> {
         let mut token_inprocessing = false;
         let mut token_start = 0;
 
-        let mut char_iter = self.stream[self.curr_pos..].chars().peekable();
-
         loop {
-            let c = char_iter.next();
+            let (c_pos, c) = self.char_iter.next();
             if !c.is_some() {
                 if self.past_eol == false {
                     self.past_eol = true;
@@ -68,7 +65,7 @@ impl Iterator for Tokens<'_> {
                 // If token is in-processing, it must have been Int. No need to check character
                 // becuase it's done in the last iteration during look-ahead.
                 if !token_inprocessing {
-                    token_start = self.curr_pos;
+                    token_start = c_pos;
                     match c {
                         '+' => res = TokenKind::Add,
                         '*' => res = TokenKind::Mul,
@@ -84,7 +81,7 @@ impl Iterator for Tokens<'_> {
                     match char_iter.peek() {
                         Some(next_c) if next_c.is_numeric() => { token_inprocessing = true }
                         _ => {
-                            res = TokenKind::Int(self.stream[token_start..(self.curr_pos + 1)].parse::<u64>().unwrap());
+                            res = TokenKind::Int(self.stream[token_start..(c_pos + 1)].parse::<u64>().unwrap());
                             token_inprocessing = false;
                         }
                     }
@@ -93,12 +90,9 @@ impl Iterator for Tokens<'_> {
                 }
 
                 if token_inprocessing == false {
-                    self.curr_pos += 1;
                     return Some(res);
                 }
             }
-
-            self.curr_pos += 1;
         }
     }
 }
