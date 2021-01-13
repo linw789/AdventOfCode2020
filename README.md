@@ -1,1 +1,1 @@
-Advent of Code 2020 code.
+🎄🦀🎄 Rust based solutions for Advent of Code 2020 🎄🦀🎄
