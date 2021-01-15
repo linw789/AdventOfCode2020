@@ -1,7 +1,7 @@
+use std::iter::{Enumerate, Peekable};
 use std::str::from_utf8;
 use std::str::{Chars, Lines};
 use std::vec::Vec;
-use std::iter::{Enumerate, Peekable};
 
 #[derive(Debug, PartialEq)]
 enum TokenKind {
@@ -84,7 +84,9 @@ impl Iterator for Tokens<'_> {
                         '*' => res = TokenKind::Mul,
                         '(' => res = TokenKind::LeftParen,
                         ')' => res = TokenKind::RightParen,
-                        '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => res = TokenKind::Int(0), // Set the value to 0 first.
+                        '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => {
+                            res = TokenKind::Int(0)
+                        } // Set the value to 0 first.
                         _ => panic!("Invalid character."),
                     }
                 }
@@ -92,9 +94,13 @@ impl Iterator for Tokens<'_> {
                 if matches!(res, TokenKind::Int(_)) {
                     // Need to look ahead to check if the next character is also numeric.
                     match self.char_iter.peek() {
-                        Some((_, next_c)) if next_c.is_numeric() => { token_inprocessing = true }
+                        Some((_, next_c)) if next_c.is_numeric() => token_inprocessing = true,
                         _ => {
-                            res = TokenKind::Int(self.stream[token_start..(c_pos + 1)].parse::<u64>().unwrap());
+                            res = TokenKind::Int(
+                                self.stream[token_start..(c_pos + 1)]
+                                    .parse::<u64>()
+                                    .unwrap(),
+                            );
                             token_inprocessing = false;
                         }
                     }
@@ -159,7 +165,9 @@ fn shunting_yard(line: &str, precedence: fn(&TokenKind, &TokenKind) -> bool) -> 
                                             operand_stack.push(TokenKind::Int(val0 * val1));
                                             operator_stack.pop();
                                         }
-                                        _ => panic!("Invalid token on operator stack: {:?}", last_op),
+                                        _ => {
+                                            panic!("Invalid token on operator stack: {:?}", last_op)
+                                        }
                                     }
                                 } else {
                                     break;
@@ -185,7 +193,7 @@ fn shunting_yard(line: &str, precedence: fn(&TokenKind, &TokenKind) -> bool) -> 
 
     let res = match operand_stack.pop().unwrap() {
         TokenKind::Int(v) => v,
-        _ => panic!("The last tok left on operand after evaluation stack is not Int."), 
+        _ => panic!("The last tok left on operand after evaluation stack is not Int."),
     };
 
     return res;
