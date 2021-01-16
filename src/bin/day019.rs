@@ -6,73 +6,82 @@ use std::vec::Vec;
 enum Rule {
     End(char),
     Next(Vec<usize>),
-    Choice((Vec<usize>, Vec<usize>)),
+    Choice(Vec<usize>, Vec<usize>),
     Invalid,
 }
 
-fn matches<'a>(msg: &'a str, rules: &[Rule], rule_id: usize) -> (&'a str, bool) {
-    fn matches_subrule<'a>(msg: &'a str, subrule: &Vec<usize>, rules: &[Rule]) -> (&'a str, bool) {
-        let mut remaining_str = msg;
-        let mut matched = false;
+fn matches<'a>(msgs: &Vec<&'a str>, rules: &[Rule], rule_id: usize) -> Vec<&'a str> {
+    #[inline]
+    fn matches_subrule<'a>(msgs: &Vec<&'a str>, subrule: &[usize], rules: &[Rule]) -> Vec<&'a str> {
+        let mut possible_remaining_msgs = msgs.clone();
         for id in subrule {
-            let (rs, subrule_matched) = matches(remaining_str, rules, *id);
-            matched = subrule_matched;
-            if matched {
-                remaining_str = rs;
-            } else {
+            possible_remaining_msgs = matches(&possible_remaining_msgs, rules, *id);
+            if possible_remaining_msgs.is_empty() {
                 break;
             }
         }
-        if matched {
-            return (remaining_str, matched);
-        } else {
-            return (msg, matched);
-        }
+        return possible_remaining_msgs;
     }
 
-    let mut remaining_str = msg;
-    let mut matched;
+    let mut possible_remaining_msgs = Vec::new();
     match &rules[rule_id] {
         Rule::End(letter) => {
-            // println!("letter: {}, remaining: {}", *letter, remaining_str);
-            if !msg.is_empty() && *letter == msg.chars().next().unwrap() {
-                remaining_str = &msg[1..];
-                matched = true;
-            } else {
-                matched = false;
+            for msg in msgs {
+                if !msg.is_empty() && *letter == msg.chars().next().unwrap() {
+                    possible_remaining_msgs.push(&msg[1..]);
+                }
             }
         }
         Rule::Next(subrule) => {
-            let (rs, subrule_matched) = matches_subrule(remaining_str, subrule, rules);
-            remaining_str = rs;
-            matched = subrule_matched;
+            possible_remaining_msgs = matches_subrule(msgs, subrule, rules);
         }
-        Rule::Choice((subrule0, subrule1)) => {
-            let (rs, subrule_matched) = matches_subrule(remaining_str, subrule0, rules);
-            remaining_str = rs;
-            matched = subrule_matched;
+        Rule::Choice(subrule0, subrule1) => {
+            let mut remaining_msgs = matches_subrule(msgs, subrule0, rules);
+            possible_remaining_msgs.append(&mut remaining_msgs);
 
-            if matched == false {
-                let (rs, subrule_matched) = matches_subrule(remaining_str, subrule1, rules);
-                remaining_str = rs;
-                matched = subrule_matched;
-            }
+            let mut remaining_msgs = matches_subrule(msgs, subrule1, rules);
+            possible_remaining_msgs.append(&mut remaining_msgs);
         }
         Rule::Invalid => {
             panic!("Invalid rule.");
         }
     }
 
-    return (remaining_str, matched);
+    return possible_remaining_msgs;
 }
 
 fn part_1(rules: &[Rule], messages: &[&str]) -> usize {
     return messages
         .iter()
         .filter(|msg| {
-            let (remaining_str, matched) = matches(msg, rules, 0);
-            // println!("matched: {}, remaining: {}", matched, remaining_str);
-            return remaining_str.is_empty() && matched;
+            let remaining_msgs = matches(&(vec![msg]), rules, 0);
+            let mut res = false;
+            for msg in remaining_msgs {
+                if msg.len() == 0 {
+                    res = true;
+                }
+            }
+            return res;
+        })
+        .count();
+}
+
+fn part_2(rules: &[Rule], messages: &[&str]) -> usize {
+    let mut rules = rules.to_vec();
+    rules[8] = Rule::Choice(vec![42], vec![42, 8]);
+    rules[11] = Rule::Choice(vec![42, 31], vec![42, 11, 31]);
+    return messages
+        .iter()
+        .filter(|msg| {
+            let remaining_msgs = matches(&(vec![msg]), &rules, 0);
+            let mut res = false;
+            // For part 2, there will 
+            for msg in remaining_msgs {
+                if msg.len() == 0 {
+                    res = true;
+                }
+            }
+            return res;
         })
         .count();
 }
@@ -94,7 +103,7 @@ fn main() {
         if let Some(letter) = rule.strip_prefix('"') {
             rules[id] = Rule::End(letter.chars().next().unwrap());
         } else if let Some((rule_opt0, rule_opt1)) = rule.split('|').next_tuple() {
-            rules[id] = Rule::Choice((
+            rules[id] = Rule::Choice(
                 rule_opt0
                     .split_whitespace()
                     .map(|s| s.parse::<usize>().unwrap())
@@ -103,7 +112,7 @@ fn main() {
                     .split_whitespace()
                     .map(|s| s.parse::<usize>().unwrap())
                     .collect::<Vec<usize>>(),
-            ));
+            );
         } else {
             rules[id] = Rule::Next(
                 rule.split_whitespace()
@@ -116,4 +125,5 @@ fn main() {
     let messages: Vec<&str> = lines.skip_while(|line| !line.is_empty()).skip(1).collect();
 
     println!("Part 1: {}", part_1(&rules, &messages));
+    println!("Part 2: {}", part_2(&rules, &messages));
 }
