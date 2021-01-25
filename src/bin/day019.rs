@@ -75,7 +75,7 @@ fn part_2(rules: &[Rule], messages: &[&str]) -> usize {
         .filter(|msg| {
             let remaining_msgs = matches(&(vec![msg]), &rules, 0);
             let mut res = false;
-            // For part 2, there will 
+            // For part 2, there will
             for msg in remaining_msgs {
                 if msg.len() == 0 {
                     res = true;
