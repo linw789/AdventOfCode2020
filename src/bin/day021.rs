@@ -29,7 +29,7 @@ fn main() {
         }
     }
 
-    let mut matched_ingredients: HashSet<&str> = HashSet::new();
+    let mut matched_ingredients: Vec<(&str, &str)> = Vec::new();
     loop {
         if aller_ingre_map.is_empty() {
             break;
@@ -39,7 +39,7 @@ fn main() {
         for (allergen, ingredients) in aller_ingre_map.iter() {
             if ingredients.len() == 1 {
                 to_process.push((allergen, ingredients.iter().next().unwrap()));
-                matched_ingredients.insert(ingredients.iter().next().unwrap());
+                matched_ingredients.push((ingredients.iter().next().unwrap(), allergen));
             }
         }
 
@@ -57,7 +57,11 @@ fn main() {
     let mut total: usize = 0;
     for ingredients in &ingredient_list {
         total += ingredients.iter().fold(0, |mut acc, ingredient| {
-            if !matched_ingredients.contains(ingredient) {
+            if matched_ingredients
+                .iter()
+                .find(|(matched_ingredient, _)| matched_ingredient == ingredient)
+                == None
+            {
                 acc += 1;
             }
             return acc;
@@ -65,4 +69,14 @@ fn main() {
     }
 
     println!("Part 1: {}", total);
+
+    matched_ingredients.sort_by(|(_, allergen_a), (_, allergen_b)| allergen_a.cmp(allergen_b));
+
+    let canonical = matched_ingredients
+        .iter()
+        .map(|(ingredient, _)| *ingredient)
+        .collect::<Vec<_>>()
+        .as_slice()
+        .join(",");
+    println!("Part 2: {}", canonical);
 }
