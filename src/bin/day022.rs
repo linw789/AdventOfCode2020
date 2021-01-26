@@ -79,8 +79,14 @@ fn recursive_combat(decks: &mut [VecDeque<u32>; 2]) -> usize {
 
         if decks[0].len() >= card0 as usize && decks[1].len() >= card1 as usize {
             let mut new_decks = [
-                decks[0].make_contiguous()[0..card0 as usize].iter().copied().collect::<VecDeque<u32>>(),
-                decks[1].make_contiguous()[0..card1 as usize].iter().copied().collect::<VecDeque<u32>>()
+                decks[0].make_contiguous()[0..card0 as usize]
+                    .iter()
+                    .copied()
+                    .collect::<VecDeque<u32>>(),
+                decks[1].make_contiguous()[0..card1 as usize]
+                    .iter()
+                    .copied()
+                    .collect::<VecDeque<u32>>(),
             ];
             winner = recursive_combat(&mut new_decks);
         } else {
