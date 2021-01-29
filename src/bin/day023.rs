@@ -1,146 +1,85 @@
-use std::rc::Rc;
-use std::cell::RefCell;
+fn play(cups: &mut [u32], start: u32, max: u32, moves: usize) {
+    let mut curr = start as usize;
+    for _ in 0..moves {
+        let pick1 = cups[curr] as usize;
+        let pick2 = cups[pick1] as usize;
+        let pick3 = cups[pick2] as usize;
 
-struct Cup {
-    label: u8,
-    next: Option<Rc<RefCell<Cup>>>,
-}
-
-impl PartialEq for Cup {
-    fn eq(&self, other: &Self) -> bool {
-        return self.label == other.label;
-    }
-}
-
-impl Cup {
-    pub fn new(label: u8) -> Self {
-        return Self {
-            label,
-            next: None,
-        };
-    }
-
-    pub fn next(&self) -> Rc<RefCell<Cup>> {
-        return Rc::clone(self.next.as_ref().unwrap());
-    }
-
-    pub fn link(&mut self, cup: Rc<RefCell<Cup>>) {
-        self.next = Some(cup);
-    }
-
-    pub fn unlink_next(&mut self) -> Rc<RefCell<Cup>> {
-        let next = Rc::clone(self.next.as_ref().unwrap()); 
-        self.next = Some(Rc::clone(next.borrow().next.as_ref().unwrap()));
-        return next;
-    }
-}
-
-fn find_cup_by_label(start: Rc<RefCell<Cup>>, label: u8) -> Option<Rc<RefCell<Cup>>> {
-    let first_label = start.borrow().label;
-    if label == first_label {
-        return Some(start);
-    }
-
-    let mut node = Rc::clone(start.borrow().next.as_ref().unwrap());
-    loop {
-        if label == node.borrow().label {
-            return Some(node);
-        }
-        if node.borrow().label == first_label {
-            return None;
-        }
-        node = {
-            let x = Rc::clone(node.borrow().next.as_ref().unwrap());
-            x
-        };
-    }
-}
-
-fn part_1(start: Rc<RefCell<Cup>>) -> String {
-    let mut curr = start;
-    for _ in 0..100 {
-        let pick1 = { 
-            curr.borrow_mut().unlink_next()
-        };
-        let pick2 = {
-            curr.borrow_mut().unlink_next()
-        };
-        let pick3 = {
-            curr.borrow_mut().unlink_next()
-        };
-
-        let mut dest_label = curr.borrow().label - 1;
+        let mut dest = curr - 1; 
         loop {
-            if dest_label == 0 {
-                dest_label = 9;
+            if dest == 0 {
+                dest = max as usize;
             }
-            if dest_label != pick1.borrow().label && 
-               dest_label != pick2.borrow().label && 
-               dest_label != pick3.borrow().label {
+            if dest != pick1 && dest != pick2 && dest != pick3 {
                 break;
             }
-            dest_label -= 1;
-        }
-        let dest = find_cup_by_label(Rc::clone(&curr), dest_label).unwrap();
-        {  
-            dest.borrow_mut().link(pick1);
-        }
-        {  
-            dest.borrow_mut().link(pick2);
-        }
-        {  
-            dest.borrow_mut().link(pick3);
+            dest -= 1;
         }
 
-        curr = { 
-            let x = curr.borrow().next();
-            x
-        };
+        // Break the link between `curr` and its next 3 neighbours.
+        cups[curr] = cups[pick3];
+        // Link `pick3`'s next to `dest`'s next.
+        cups[pick3] = cups[dest];
+        // Link `dest`'s next to `pick1`.
+        cups[dest] = pick1 as u32;
+        
+        curr = cups[curr] as usize;
     }
+}
 
-    let cup_1 = find_cup_by_label(Rc::clone(&curr), 1).unwrap();
+fn part_1(cups: &[u32]) -> String {
+    let mut cups_moved = cups.to_vec();
+    play(&mut cups_moved, 7, 9, 100);
+
     let mut res: String = "".to_string();
-    let mut node = cup_1.borrow().next();
+    let mut label = cups_moved[1];
     loop {
-        if node.borrow().label == 1 {
+        res += &label.to_string();
+        label = cups_moved[label as usize];
+        if label as usize == 1 {
             break;
         }
-        {
-            res += &node.borrow().label.to_string();
-        }
-        node = {
-            let x = node.borrow().next();
-            x
-        };
     }
-
     return res;
 }
 
+fn part_2(cups: &[u32]) -> usize {
+    let mut cups_moved = cups.to_vec();
+    play(&mut cups_moved, 7, 1000_000, 10_000_000);
+
+    let next1 = cups_moved[1] as usize;
+    let next2 = cups_moved[next1 as usize] as usize;
+    return next1 * next2;
+}
+
 fn main() {
-    let cups = vec![7, 3, 9, 8, 6, 2, 5, 4, 1];
+    // let input = [3, 8, 9, 1, 2, 5, 4, 6, 7];
+    let input = [7, 3, 9, 8, 6, 2, 5, 4, 1];
     
-    let start = Rc::new(RefCell::new(Cup::new(cups[0])));
-    let mut last = Rc::clone(&start);
-    for label in cups.iter().skip(1) {
-        let next = Rc::new(RefCell::new(Cup::new(*label)));
-        last.borrow_mut().link(Rc::clone(&next));
-        last = next;
-    }
-    last.borrow_mut().link(Rc::clone(&start));
+    let mut cups: Vec<u32> = Vec::new();
+    cups.resize(input.len() + 1, 0);
 
-    /*
-    let mut cup = Rc::clone(&start);
-    loop {
-        cup = {
-            let x = Rc::clone(cup.borrow().next.as_ref().unwrap());
-            x
-        };
-        if cup == start {
-            break;
-        }
+    // Because labels are unique, we can use labels themselves as indices to store their next
+    // neighbours.
+    let start = input[0];
+    let mut last = start as usize;
+    for label in input.iter().skip(1) {
+        let next = *label;
+        cups[last as usize] = next;
+        last = next as usize;
     }
-    */
+    cups[last] = start;
 
-    println!("Part 1: {}", part_1(start));
+    // println!("Cups: {:?}", cups.iter().enumerate().collect::<Vec<_>>());
+
+    println!("Part 1: {}", part_1(&cups));
+
+    cups.resize(1000_000 + 1, 0);
+    for i in 10..=1000_000 {
+        cups[last] = i;
+        last = i as usize;
+    }
+    cups[last] = start;
+
+    println!("Part 2: {}", part_2(&cups));
 }
