@@ -5,7 +5,7 @@ fn play(cups: &mut [u32], start: u32, max: u32, moves: usize) {
         let pick2 = cups[pick1] as usize;
         let pick3 = cups[pick2] as usize;
 
-        let mut dest = curr - 1; 
+        let mut dest = curr - 1;
         loop {
             if dest == 0 {
                 dest = max as usize;
@@ -22,7 +22,7 @@ fn play(cups: &mut [u32], start: u32, max: u32, moves: usize) {
         cups[pick3] = cups[dest];
         // Link `dest`'s next to `pick1`.
         cups[dest] = pick1 as u32;
-        
+
         curr = cups[curr] as usize;
     }
 }
@@ -55,7 +55,7 @@ fn part_2(cups: &[u32]) -> usize {
 fn main() {
     // let input = [3, 8, 9, 1, 2, 5, 4, 6, 7];
     let input = [7, 3, 9, 8, 6, 2, 5, 4, 1];
-    
+
     let mut cups: Vec<u32> = Vec::new();
     cups.resize(input.len() + 1, 0);
 
