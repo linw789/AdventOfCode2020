@@ -1,106 +1,60 @@
 use std::str::from_utf8;
 use std::vec::Vec;
 use intbits::Bits;
+use bit_reverse::BitwiseReverse;
+// use bitvec::prelude::*;
 
-fn get_tile_boundaries(tile: u128, width: usize) -> (u16, u16, u16, u16) {
-    let (mut e, mut w, mut s, mut n): (u16, u16, u16, u16) = (0, 0, 0, 0);
-    for y in 0..width {
-        e.set_bit(y, tile.bit(y * width + width - 1));
-        w.set_bit(y, tile.bit(y * width));
-    }
-    for x in 0..width {
-        s.set_bit(x, tile.bit(width * (width - 1) + x));
-        n.set_bit(x, tile.bit(x));
-    }
-    return (e, w, s, n);
-}
-
-fn get_flipped_boundaries(tile: u128, width: usize) -> (u16, u16, u16, u16) {
-    let (mut ef, mut wf, mut sf, mut nf): (u16, u16, u16, u16) = (0, 0, 0, 0);
-    for y in 0..width {
-        ef.set_bit(width - y - 1, tile.bit(y * width + width - 1));
-        wf.set_bit(width - y - 1, tile.bit(y * width));
-    }
-    for x in 0..width {
-        sf.set_bit(width - x - 1, tile.bit((width - 1) * width + x));
-        nf.set_bit(width - x - 1, tile.bit(x));
-    }
-    return (ef, wf, sf, nf);
-}
-
-fn part_1(tiles: &Vec<(u32, u128)>) -> Vec< {
-    let mut matches_per_tile = vec![0; tiles.len()];
-    for (index, (tile_id, tile)) in tiles.iter().enumerate() {
-        let (e, w, s, n) = get_tile_boundaries(*tile, 10);
-        let (ef, wf, sf, nf) = get_flipped_boundaries(*tile, 10);
-
-        for (other_tile_id, other_tile) in tiles.iter() {
-            if tile_id == other_tile_id {
-                continue;
-            }
-
-            let (oe, ow, os, on) = get_tile_boundaries(*other_tile, 10);
-            let (oef, owf, osf, onf) = get_flipped_boundaries(*other_tile, 10);
-
-            for b in &[e, w, s, n, ef, wf, sf, nf] {
-                let mut matched = false;
-                for ob in &[oe, ow, os, on, oef, owf, osf, onf] {
-                    if b == ob {
-                        matches_per_tile[index] += 1;
-                        matched = true;
-                        break;
-                    }
-                }
-                if matched {
-                    break;
-                }
-            }
-        }
-    }
-
-    return tiles.iter().enumerate().fold(1, |mut mul, (index, (tile_id, _))| {
-        if matches_per_tile[index] == 2 {
-            mul *= *tile_id as u64;
-        }
-        return mul;
-    });
-}
+const TILE_WIDTH: usize = 10;
 
 struct Tile {
-    data: u128,
-    width: usize,
+    rows: [u16; TILE_WIDTH],
 }
 
 impl Tile {
-    pub fn get_boundaries(&self) -> [u16; 8] {
-        let mut e = 0;
-        let mut w = 0;
-        let mut s = 0;
-        let mut n = 0;
-        for y in 0..self.width {
-            e.set_bit(y, self.data.bit(y * width + width - 1));
-            w.set_bit(y, self.data.bit(y * width));
+    pub fn new(rows: [u16; TILE_WIDTH]) -> Self {
+        return Self {
+            rows
+        };
+    }
+
+    pub fn set_row(&mut self, row_index: usize, row: u16) {
+        self.rows[row_index] = row;
+    }
+
+    pub fn get_borders(&self) -> (u16, u16, u16, u16) {
+        // south 
+        let s = self.rows[0];
+        // east 
+        let mut e: u16 = 0;
+        for (i, row) in self.rows.iter().enumerate() {
+            e.set_bit(i, row.bit(0));
         }
-        for x in 0..self.width {
-            s.set_bit(x, tile.bit(width * (width - 1) + x));
-            n.set_bit(x, tile.bit(x));
+        // north 
+        let n = self.rows[TILE_WIDTH - 1];
+        // west 
+        let mut w: u16 = 0;
+        for (i, row) in self.rows.iter().enumerate() {
+            w.set_bit(i, row.bit(TILE_WIDTH - 1));
         }
 
-        // boundaries flipped
-        let mut ef = 0; 
-        let mut wf = 0;
-        let mut sf = 0; 
-        let mut nf = 0;
-        for y in 0..self.width {
-            ef.set_bit(width - y - 1, self.data.bit(y * width + width - 1));
-            wf.set_bit(width - y - 1, self.data.bit(y * width));
-        }
-        for x in 0..self.width {
-            sf.set_bit(width - x - 1, self.data.bit((width - 1) * width + x));
-            nf.set_bit(width - x - 1, self.data.bit(x));
-        }
+        return (s, e, n, w);
+    }
 
-        return [e, w, s, n, ef, wf, sf, nf];
+    pub fn get_borders_flipped(&self) -> (u16, u16, u16, u16) {
+        let (s, e, n, w) = self.get_borders();
+        let mut sf = s.swap_bits();
+        sf >>= 16 - TILE_WIDTH;
+
+        let mut ef = e.swap_bits();
+        ef >>= 16 - TILE_WIDTH;
+
+        let mut nf = n.swap_bits();
+        nf >>= 16 - TILE_WIDTH;
+
+        let mut wf = w.swap_bits();
+        wf >>= 16 - TILE_WIDTH;
+
+        return (sf, ef, nf, wf);
     }
 }
 
@@ -108,49 +62,88 @@ fn main() {
     let input = include_bytes!("day020.input");
     let mut lines = from_utf8(input).unwrap().lines();
 
-    let mut tiles: Vec<(u32, u128)> = Vec::new();
+    let mut tiles: Vec<(u32, Tile)> = Vec::new();
     loop {
         let line = lines.next();
         if line == None {
             break;
         }
 
-        if let Some(title) = line.unwrap().strip_prefix("Tile ") {
-            let tile_id = title.strip_suffix(':').unwrap().parse::<u32>().unwrap();
-
-            let mut tile: u128 = 0;
-            let mut index = 0;
+        let line = line.unwrap();
+        if let Some(id) = line.strip_prefix("Tile ") {
+            let id = id.trim().strip_suffix(":").unwrap().parse::<u32>().unwrap();
+            let mut tile = Tile::new([0; TILE_WIDTH]);
+            let mut row_i = 0;
             loop {
-                match lines.next() {
-                    Some(line) => {
-                        if line.is_empty() {
-                            break;
+                let line = lines.next();
+                if line == None {
+                    break;
+                }
+                let line = line.unwrap();
+                if line.is_empty() {
+                    break;
+                }
+                let row: u16 = line
+                    .chars()
+                    .rev()
+                    .enumerate()
+                    .fold(0, |mut acc, (i, c)| {
+                        if c == '#' {
+                            acc.set_bit(i, true);
                         }
-                        for c in line.chars() {
-                            match c {
-                                '#' => {
-                                    tile.set_bit(index, true);
-                                }
-                                '.' => {
-                                    tile.set_bit(index, false);
-                                }
-                                _ => {
-                                    panic!("Invalid tile character.");
-                                }
-                            }
-                            index += 1;
-                        }
-                    }
-                    None => {
-                        break;
-                    }
-                };
+                        acc
+                    });
+                tile.set_row(row_i, row);
+                row_i += 1;
             }
-            tiles.push((tile_id, tile));
-        } else {
-            panic!("Invalid line.");
+            tiles.push((id, tile));
         }
     }
 
-    println!("Part 1: {}", part_1(&tiles));
+    let mut neighbours = Vec::new();
+
+    for (id, tile) in &tiles {
+        let (s, e, n, w) = tile.get_borders();
+        let (sf, ef, nf, wf) = tile.get_borders_flipped();
+        let borders = [s, e, n, w, sf, ef, nf, wf];
+        let mut neighbour_cnt = 0;
+
+        for (other_id, other_tile) in &tiles {
+            if id == other_id {
+                continue;
+            }
+
+            let (os, oe, on, ow) = other_tile.get_borders();
+            let (osf, oef, onf, owf) = other_tile.get_borders_flipped();
+            let other_borders = [os, oe, on, ow, osf, oef, onf, owf];
+
+            let mut is_neighbour = false;
+            for b in borders.iter() {
+                for ob in other_borders.iter() {
+                    if b == ob {
+                        is_neighbour = true;
+                        break;
+                    }
+                }
+                if is_neighbour {
+                    break;
+                }
+            }
+
+            if is_neighbour {
+                neighbour_cnt += 1;
+            }
+        }
+        neighbours.push(neighbour_cnt);
+    }
+
+    let mut res: usize = 1;
+    for (i, cnt) in neighbours.iter().enumerate() {
+        if *cnt == 2 {
+            let (id, _) = tiles[i];
+            res *= id as usize;
+        }
+    }
+
+    println!("Part 1: {}", res);
 }
